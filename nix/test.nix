@@ -208,8 +208,9 @@ in
         bob_id = bob.succeed("nodetrust pubkey --key /var/lib/nodetrust-client/identity.key | sed -n 's/peer_id = \"\\(.*\\)\"/\\1/p'").strip()
         bob.wait_until_succeeds(f"journalctl -u nodetrust-client | grep 'discovered peer' | grep {alice_id}", timeout=120)
         alice.wait_until_succeeds(f"journalctl -u nodetrust-client | grep 'discovered peer' | grep {bob_id}", timeout=120)
-        # discovered peers are dialed over their announced WSS address
-        bob.wait_until_succeeds(f"journalctl -u nodetrust-client | grep connected | grep {alice_id} | grep tls/ws", timeout=120)
+        # discovered peers are dialed over their announced WSS address (whoever discovers first dials)
+        dialed = lambda m, peer: m.execute(f"journalctl -u nodetrust-client | grep connected | grep {peer} | grep -q tls/ws")[0] == 0
+        retry(lambda _: dialed(bob, alice_id) or dialed(alice, bob_id), timeout=120)
 
     with subtest("js client: issuance and interop"):
         carol.systemctl("start nodetrust-js")

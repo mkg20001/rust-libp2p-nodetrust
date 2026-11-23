@@ -166,3 +166,18 @@ fn default_wss() -> Multiaddr {
 fn default_true() -> bool {
     true
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn examples_parse() {
+        for (name, text) in [
+            ("dns", include_str!("../../../examples/dns.toml")),
+            ("proof", include_str!("../../../examples/proof.toml")),
+            ("issue", include_str!("../../../examples/issue.toml")),
+            ("client", include_str!("../../../examples/client.toml")),
+        ] {
+            toml::from_str::<super::Config>(text).unwrap_or_else(|e| panic!("examples/{name}.toml: {e}"));
+        }
+    }
+}

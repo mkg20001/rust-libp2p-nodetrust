@@ -1,0 +1,26 @@
+# nodetrust issue --config issue.toml
+# (peer ids below are the VM test keys from nix/test-keys; use your own)
+[node]
+key_file = "issue.key"
+listen = ["/ip4/0.0.0.0/tcp/25893", "/ip4/0.0.0.0/tcp/25894/ws"]
+relay = true
+
+[issue]
+zone = "nt.example.org"
+state_dir = "issue-state"            # ACME account + certificate cache
+email = "admin@example.org"
+directory = "staging"                # staging | production | <ACME directory URL>
+# ca_file = "pebble.minica.pem"      # extra root for the ACME server's HTTPS
+dns = ["/ip4/127.0.0.1/tcp/25891/p2p/12D3KooWRSxcSjE7GLQ8w41wkgWJMUpzCf4c4K2EM6jxcCPXyWjb"]
+proof_keys = ["CAESIHnnSRr0rA+NacjxVtrjU5gIK9zZVKc9n8TxUFTJYs3m"]              # `public_key` printed by `nodetrust pubkey --key proof.key`
+cryptos = ["ecdsa-p256", "rsa"]
+order_timeout = 120
+gc_interval = 3600
+
+[[issue.proof_servers]]
+display = "v4"
+addrs = ["/dns4/v4.nt.example.org/tcp/25892/p2p/12D3KooWMFNSRufbxsKDy8VsRak21Qv93DZzMLK1j2cWnt69Uhxx"]
+
+[[issue.proof_servers]]
+display = "v6"
+addrs = ["/dns6/v6.nt.example.org/tcp/25892/p2p/12D3KooWMFNSRufbxsKDy8VsRak21Qv93DZzMLK1j2cWnt69Uhxx"]

@@ -1,0 +1,18 @@
+# nodetrust dns --config dns.toml
+# (peer ids below are the VM test keys from nix/test-keys; use your own)
+[node]
+key_file = "dns.key"                    # generated if missing
+listen = ["/ip4/0.0.0.0/tcp/25891"]
+relay = true                            # circuit relay hop for other peers
+
+[dns]
+listen = ["0.0.0.0:53", "[::]:53"]      # UDP and TCP
+zone = "nt.example.org"
+ns = ["ns1.nt.example.org"]
+# hostmaster = "hostmaster.example.org"
+admins = ["12D3KooWDxx9CK6QJ4tVXNx8qRPJzKQDCGDYP1VDAmGE5xkdVT19"]
+ttl = 36000                             # seconds, ip/id records
+txt_ttl = 120                           # seconds, DNS-01 records
+
+[dns.records]                           # static records inside the zone (glue etc.)
+"ns1.nt.example.org" = ["203.0.113.1", "2001:db8::1"]

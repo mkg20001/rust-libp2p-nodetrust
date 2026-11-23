@@ -1,0 +1,13 @@
+# nodetrust client --config client.toml
+# (peer ids below are the VM test keys from nix/test-keys; use your own)
+[node]
+key_file = "client.key"
+
+[client]
+issuer = "/dns4/issue.nt.example.org/tcp/25893/p2p/12D3KooWDxx9CK6QJ4tVXNx8qRPJzKQDCGDYP1VDAmGE5xkdVT19"
+state_dir = "client-state"           # tls.key + cert.json
+wss_listen = "/ip4/0.0.0.0/tcp/4443/tls/ws"
+nat = true                           # UPnP port mapping
+cryptos = ["ecdsa-p256", "rsa"]
+dial_discovered = true
+# ca_file = "test-root.pem"          # extra roots when dialing other peers' WSS

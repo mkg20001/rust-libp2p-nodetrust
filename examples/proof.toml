@@ -1,0 +1,7 @@
+# nodetrust proof --config proof.toml
+[node]
+key_file = "proof-identity.key"
+listen = ["/ip4/0.0.0.0/tcp/25892", "/ip6/::/tcp/25892"]   # plain TCP: the observed address is the proof
+
+[proof]
+key_file = "proof.key"   # `nodetrust keygen --out proof.key`; shared by all proof servers

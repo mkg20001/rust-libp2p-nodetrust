@@ -325,6 +325,10 @@ async fn run(
                     tracing::info!(%address, "listening");
                     let _ = ev_tx.send(NodeEvent::Listening(address));
                 }
+                SwarmEvent::ListenerError { error, .. } => tracing::warn!("listener error: {error}"),
+                SwarmEvent::ListenerClosed { addresses, reason: Err(error), .. } => {
+                    tracing::error!(?addresses, "listener closed: {error}");
+                }
                 SwarmEvent::ConnectionEstablished { peer_id, connection_id, endpoint, .. } => {
                     let addr = endpoint.get_remote_address().clone();
                     conn_addrs.lock().unwrap().entry(peer_id).or_default().insert(connection_id, addr.clone());

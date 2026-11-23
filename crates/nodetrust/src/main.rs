@@ -125,7 +125,9 @@ async fn run(cmd: Cmd) -> anyhow::Result<()> {
             let mut cfg = Config::load(&config)?;
             let proof = cfg.proof.take().ok_or_else(|| anyhow!("missing [proof] section"))?;
             let key = Keypair::from_protobuf_encoding(&std::fs::read(&proof.key_file).with_context(|| format!("reading {}", proof.key_file.display()))?)?;
-            server::proof::run(service_node(&cfg, false)?, key)?;
+            // keep the handle: the swarm stops once the last Node is dropped
+            let node = service_node(&cfg, false)?;
+            server::proof::run(&node, key)?;
             futures::future::pending().await
         }
         Cmd::Issue { config } => {

@@ -8,7 +8,7 @@ use crate::{
     proto::{Error, PROOF_PROTOCOL, ProofRequest, ProofResponse},
 };
 
-pub fn run(node: Node, key: Keypair) -> anyhow::Result<()> {
+pub fn run(node: &Node, key: Keypair) -> anyhow::Result<()> {
     tracing::info!(proof_key = %crate::server::public_key_b64(&key), "proof service ready");
     let conns = node.conn_addrs.clone();
     node.serve(PROOF_PROTOCOL, move |peer, _: ProofRequest| {

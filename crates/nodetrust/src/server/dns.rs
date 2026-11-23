@@ -76,7 +76,8 @@ pub struct Answer {
 }
 
 fn fqdn_name(s: &str) -> anyhow::Result<Name> {
-    let mut n = Name::from_ascii(s.trim_end_matches('.').to_ascii_lowercase()).with_context(|| format!("bad name {s}"))?;
+    let mut n =
+        Name::from_ascii(s.trim_end_matches('.').to_ascii_lowercase()).with_context(|| format!("bad name {s}"))?;
     n.set_fqdn(true);
     Ok(n)
 }
@@ -94,7 +95,11 @@ impl Zone {
             hostmaster,
             ttl: cfg.ttl,
             txt_ttl: cfg.txt_ttl,
-            records: cfg.records.iter().map(|(k, v)| (k.trim_end_matches('.').to_ascii_lowercase(), v.clone())).collect(),
+            records: cfg
+                .records
+                .iter()
+                .map(|(k, v)| (k.trim_end_matches('.').to_ascii_lowercase(), v.clone()))
+                .collect(),
             challenges: Challenges::default(),
         })
     }
@@ -121,7 +126,11 @@ impl Zone {
         }
         if qtype == RecordType::ANY {
             // RFC 8482
-            return ok(vec![Record::from_rdata(name, self.ttl, RData::HINFO(HINFO::new("RFC8482".into(), String::new())))]);
+            return ok(vec![Record::from_rdata(
+                name,
+                self.ttl,
+                RData::HINFO(HINFO::new("RFC8482".into(), String::new())),
+            )]);
         }
         let key = name.to_ascii().trim_end_matches('.').to_owned();
         let rec = |rdata| Record::from_rdata(name.clone(), self.ttl, rdata);
@@ -218,7 +227,8 @@ impl RequestHandler for Handler {
 /// Start the DNS listeners and the `/dns-01` service. Runs until the process exits.
 pub async fn run(node: Node, cfg: DnsConfig) -> anyhow::Result<()> {
     let zone = Arc::new(Zone::new(&cfg)?);
-    let admins: Vec<PeerId> = cfg.admins.iter().map(|a| a.parse().with_context(|| format!("admin {a}"))).collect::<anyhow::Result<_>>()?;
+    let admins: Vec<PeerId> =
+        cfg.admins.iter().map(|a| a.parse().with_context(|| format!("admin {a}"))).collect::<anyhow::Result<_>>()?;
     let txt_ttl = Duration::from_secs(cfg.txt_ttl.into());
 
     let z = zone.clone();
@@ -323,7 +333,10 @@ mod tests {
         assert_eq!(dns01(&z, &[admin], PeerId::random(), &req("ip4-1-2-3-4.nt.test"), ttl), Error::ENotAuthorized);
         assert_eq!(dns01(&z, &[admin], admin, &req("evil.org"), ttl), Error::EInvalidRequest);
         assert_eq!(dns01(&z, &[admin], admin, &req("ip4-1-2-3-4.nt.test"), ttl), Error::Ok);
-        assert_eq!(dns01(&z, &[admin], admin, &Dns01Request { fqdn: "ip4-1-2-3-4.nt.test".into(), value: "two".into() }, ttl), Error::Ok);
+        assert_eq!(
+            dns01(&z, &[admin], admin, &Dns01Request { fqdn: "ip4-1-2-3-4.nt.test".into(), value: "two".into() }, ttl),
+            Error::Ok
+        );
         let a = q(&z, "_acme-challenge.ip4-1-2-3-4.nt.test", RecordType::TXT);
         assert_eq!(data(&a), vec!["tok", "two"]);
         z.challenges.set("_acme-challenge.x.nt.test", "gone", Duration::ZERO);

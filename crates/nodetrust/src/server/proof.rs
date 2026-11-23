@@ -12,12 +12,8 @@ pub fn run(node: &Node, key: Keypair) -> anyhow::Result<()> {
     tracing::info!(proof_key = %crate::server::public_key_b64(&key), "proof service ready");
     let conns = node.conn_addrs.clone();
     node.serve(PROOF_PROTOCOL, move |peer, _: ProofRequest| {
-        let mut ips: Vec<_> = conns
-            .lock()
-            .unwrap()
-            .get(&peer)
-            .map(|c| c.values().filter_map(tcp_ip).collect())
-            .unwrap_or_default();
+        let mut ips: Vec<_> =
+            conns.lock().unwrap().get(&peer).map(|c| c.values().filter_map(tcp_ip).collect()).unwrap_or_default();
         ips.sort();
         ips.dedup();
         let resp = if ips.is_empty() {

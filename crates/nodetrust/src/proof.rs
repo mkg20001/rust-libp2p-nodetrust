@@ -14,10 +14,7 @@ use crate::proto::{Address, AddressType, Proof, ProofWrapper};
 pub const VALIDITY_MS: i64 = 5 * 60 * 1000;
 
 pub fn now_ms() -> i64 {
-    web_time::SystemTime::now()
-        .duration_since(web_time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
+    web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
 pub fn sign(key: &Keypair, peer: &PeerId, ips: &[IpAddr], now: i64) -> Result<ProofWrapper, ProofError> {

@@ -12,7 +12,10 @@ use std::{
 };
 
 use anyhow::{Context, anyhow, bail};
-use instant_acme::{Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, LetsEncrypt, NewAccount, NewOrder, OrderStatus, RetryPolicy};
+use instant_acme::{
+    Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, LetsEncrypt, NewAccount, NewOrder,
+    OrderStatus, RetryPolicy,
+};
 use libp2p::{Multiaddr, PeerId, identity::PublicKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -23,8 +26,8 @@ use crate::{
     node::{Node, split_peer},
     proof,
     proto::{
-        Crypto, DNS01_PROTOCOL, Dns01Request, Dns01Response, Error, INFO_PROTOCOL, ISSUE_PROTOCOL, IssueInfo, IssueInfoRequest,
-        IssueRequest, IssueResponse, ProofServer,
+        Crypto, DNS01_PROTOCOL, Dns01Request, Dns01Response, Error, INFO_PROTOCOL, ISSUE_PROTOCOL, IssueInfo,
+        IssueInfoRequest, IssueRequest, IssueResponse, ProofServer,
     },
     tlskey,
 };
@@ -51,7 +54,8 @@ struct Issuer {
 }
 
 pub async fn run(node: Node, cfg: IssueConfig) -> anyhow::Result<()> {
-    let proof_keys = cfg.proof_keys.iter().map(|k| crate::server::parse_public_key(k)).collect::<anyhow::Result<Vec<_>>>()?;
+    let proof_keys =
+        cfg.proof_keys.iter().map(|k| crate::server::parse_public_key(k)).collect::<anyhow::Result<Vec<_>>>()?;
     let cryptos = cfg.cryptos.iter().map(|c| tlskey::parse_crypto(c)).collect::<anyhow::Result<Vec<_>>>()?;
     for a in &cfg.dns {
         split_peer(a)?;
@@ -62,8 +66,13 @@ pub async fn run(node: Node, cfg: IssueConfig) -> anyhow::Result<()> {
             .proof_servers
             .iter()
             .map(|s| {
-                let (peer, _) = split_peer(s.addrs.first().ok_or_else(|| anyhow!("proof server {} has no addrs", s.display))?)?;
-                Ok(ProofServer { id: peer.to_bytes(), addrs: s.addrs.iter().map(|a| a.to_vec()).collect(), display: s.display.clone() })
+                let (peer, _) =
+                    split_peer(s.addrs.first().ok_or_else(|| anyhow!("proof server {} has no addrs", s.display))?)?;
+                Ok(ProofServer {
+                    id: peer.to_bytes(),
+                    addrs: s.addrs.iter().map(|a| a.to_vec()).collect(),
+                    display: s.display.clone(),
+                })
             })
             .collect::<anyhow::Result<_>>()?,
         supported_cryptos: cryptos.iter().map(|c| *c as i32).collect(),
@@ -130,7 +139,11 @@ async fn account(cfg: &IssueConfig) -> anyhow::Result<Account> {
     let contact: Vec<String> = cfg.email.iter().map(|e| format!("mailto:{e}")).collect();
     let contact: Vec<&str> = contact.iter().map(String::as_str).collect();
     let (account, creds) = builder()?
-        .create(&NewAccount { contact: &contact, terms_of_service_agreed: true, only_return_existing: false }, directory.clone(), None)
+        .create(
+            &NewAccount { contact: &contact, terms_of_service_agreed: true, only_return_existing: false },
+            directory.clone(),
+            None,
+        )
         .await
         .with_context(|| format!("creating ACME account at {directory}"))?;
     std::fs::write(&path, serde_json::to_string(&creds)?)?;
@@ -149,14 +162,18 @@ impl Issuer {
         let now = proof::now_ms();
         let mut ips = Vec::new();
         for p in &req.proofs {
-            ips.extend(proof::verify(p, &self.proof_keys, &peer, now).map_err(|e| R::fail(Error::EInvalidProof, e.to_string()))?);
+            ips.extend(
+                proof::verify(p, &self.proof_keys, &peer, now)
+                    .map_err(|e| R::fail(Error::EInvalidProof, e.to_string()))?,
+            );
         }
         let csr = tlskey::parse_csr(&req.csr).map_err(|e| R::fail(Error::EInvalidRequest, format!("{e:#}")))?;
         let offered: Vec<Crypto> = req.supported_cryptos.iter().filter_map(|c| Crypto::try_from(*c).ok()).collect();
         if !self.cryptos.contains(&csr.crypto) || !offered.contains(&csr.crypto) {
             return Err(R::fail(Error::ENoMatchingCrypto, format!("CSR key is {}", tlskey::crypto_name(csr.crypto))));
         }
-        let names = names::cert_names(&peer, &ips, &self.zone).map_err(|e| R::fail(Error::EInvalidRequest, e.to_string()))?;
+        let names =
+            names::cert_names(&peer, &ips, &self.zone).map_err(|e| R::fail(Error::EInvalidRequest, e.to_string()))?;
         if names.iter().cloned().collect::<BTreeSet<_>>() != csr.names {
             return Err(R::fail(Error::EInvalidRequest, format!("CSR must name exactly {names:?}")));
         }
@@ -193,7 +210,13 @@ impl Issuer {
         })
     }
 
-    async fn cached_or_order(&self, path: &Path, names: &[String], csr: &[u8], crypto: Crypto) -> Result<(Cached, bool), IssueResponse> {
+    async fn cached_or_order(
+        &self,
+        path: &Path,
+        names: &[String],
+        csr: &[u8],
+        crypto: Crypto,
+    ) -> Result<(Cached, bool), IssueResponse> {
         if let Some(c) = std::fs::read(path).ok().and_then(|b| serde_json::from_slice::<Cached>(&b).ok())
             && !tlskey::renew_due(c.not_before_ms, c.not_after_ms, proof::now_ms())
         {
@@ -204,7 +227,13 @@ impl Issuer {
             .map_err(|_| IssueResponse::fail(Error::EOther, "ACME order timed out"))?
             .map_err(acme_error)?;
         let info = tlskey::parse_chain(&chain).map_err(|e| IssueResponse::fail(Error::EOther, format!("{e:#}")))?;
-        let cached = Cached { chain, names: names.to_vec(), not_before_ms: info.not_before_ms, not_after_ms: info.not_after_ms, crypto: crypto as i32 };
+        let cached = Cached {
+            chain,
+            names: names.to_vec(),
+            not_before_ms: info.not_before_ms,
+            not_after_ms: info.not_after_ms,
+            crypto: crypto as i32,
+        };
         let write = || -> anyhow::Result<()> {
             std::fs::create_dir_all(path.parent().expect("cert path has parent"))?;
             std::fs::write(path, serde_json::to_vec(&cached)?)?;
@@ -227,7 +256,8 @@ impl Issuer {
                 AuthorizationStatus::Valid => continue,
                 s => bail!("authorization is {s:?}"),
             }
-            let mut challenge = authz.challenge(ChallengeType::Dns01).ok_or_else(|| anyhow!("CA offered no dns-01 challenge"))?;
+            let mut challenge =
+                authz.challenge(ChallengeType::Dns01).ok_or_else(|| anyhow!("CA offered no dns-01 challenge"))?;
             let fqdn = challenge.identifier().to_string();
             self.set_dns01(&fqdn, &challenge.key_authorization().dns_value()).await?;
             challenge.set_ready().await?;
@@ -306,7 +336,16 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("nodetrust-gc-{}", std::process::id()));
         let peer = dir.join("peer");
         std::fs::create_dir_all(&peer).unwrap();
-        let c = |after| serde_json::to_vec(&Cached { chain: String::new(), names: vec![], not_before_ms: 0, not_after_ms: after, crypto: 2 }).unwrap();
+        let c = |after| {
+            serde_json::to_vec(&Cached {
+                chain: String::new(),
+                names: vec![],
+                not_before_ms: 0,
+                not_after_ms: after,
+                crypto: 2,
+            })
+            .unwrap()
+        };
         std::fs::write(peer.join("old.json"), c(10)).unwrap();
         std::fs::write(peer.join("new.json"), c(1000)).unwrap();
         gc(&dir, 100).unwrap();

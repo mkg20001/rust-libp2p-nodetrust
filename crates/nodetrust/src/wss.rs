@@ -115,7 +115,10 @@ impl Transport for WssListener {
         Err(TransportError::MultiaddrNotSupported(addr))
     }
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<TransportEvent<Self::ListenerUpgrade, Self::Error>> {
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<TransportEvent<Self::ListenerUpgrade, Self::Error>> {
         Pin::new(&mut self.inner).poll(cx).map(|ev| match ev {
             TransportEvent::NewAddress { listener_id, listen_addr } => {
                 TransportEvent::NewAddress { listener_id, listen_addr: add_tls(listen_addr) }
@@ -123,12 +126,9 @@ impl Transport for WssListener {
             TransportEvent::AddressExpired { listener_id, listen_addr } => {
                 TransportEvent::AddressExpired { listener_id, listen_addr: add_tls(listen_addr) }
             }
-            TransportEvent::Incoming { listener_id, upgrade, local_addr, send_back_addr } => TransportEvent::Incoming {
-                listener_id,
-                upgrade,
-                local_addr: add_tls(local_addr),
-                send_back_addr,
-            },
+            TransportEvent::Incoming { listener_id, upgrade, local_addr, send_back_addr } => {
+                TransportEvent::Incoming { listener_id, upgrade, local_addr: add_tls(local_addr), send_back_addr }
+            }
             ev => ev,
         })
     }
@@ -140,7 +140,8 @@ pub struct TlsTcpTransport {
     acceptor: futures_rustls::TlsAcceptor,
 }
 
-type TlsFut = Pin<Box<dyn Future<Output = std::io::Result<futures_rustls::server::TlsStream<tcp::tokio::TcpStream>>> + Send>>;
+type TlsFut =
+    Pin<Box<dyn Future<Output = std::io::Result<futures_rustls::server::TlsStream<tcp::tokio::TcpStream>>> + Send>>;
 
 impl Transport for TlsTcpTransport {
     type Output = futures_rustls::server::TlsStream<tcp::tokio::TcpStream>;
@@ -160,12 +161,13 @@ impl Transport for TlsTcpTransport {
         Err(TransportError::MultiaddrNotSupported(addr))
     }
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<TransportEvent<Self::ListenerUpgrade, Self::Error>> {
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<TransportEvent<Self::ListenerUpgrade, Self::Error>> {
         let acceptor = self.acceptor.clone();
         Pin::new(&mut self.tcp).poll(cx).map(|ev| {
-            ev.map_upgrade(move |upgrade| {
-                Box::pin(async move { acceptor.accept(upgrade.await?).await }) as TlsFut
-            })
+            ev.map_upgrade(move |upgrade| Box::pin(async move { acceptor.accept(upgrade.await?).await }) as TlsFut)
         })
     }
 }

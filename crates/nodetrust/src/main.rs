@@ -21,13 +21,25 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmd {
     /// Run the DNS server (`[dns]` section)
-    Dns { #[arg(long, short)] config: PathBuf },
+    Dns {
+        #[arg(long, short)]
+        config: PathBuf,
+    },
     /// Run the proof server (`[proof]` section)
-    Proof { #[arg(long, short)] config: PathBuf },
+    Proof {
+        #[arg(long, short)]
+        config: PathBuf,
+    },
     /// Run the issue server (`[issue]` section)
-    Issue { #[arg(long, short)] config: PathBuf },
+    Issue {
+        #[arg(long, short)]
+        config: PathBuf,
+    },
     /// Run a client: obtain a certificate, serve WSS, announce (`[client]` section)
-    Client { #[arg(long, short)] config: PathBuf },
+    Client {
+        #[arg(long, short)]
+        config: PathBuf,
+    },
     /// Generate a libp2p keypair (identity or proof key)
     Keygen {
         #[arg(long, short)]
@@ -64,7 +76,11 @@ enum Debug {
         key: Option<PathBuf>,
     },
     /// Fetch a proof from a proof server and save it
-    Proof { server: Multiaddr, #[arg(long)] out: PathBuf },
+    Proof {
+        server: Multiaddr,
+        #[arg(long)]
+        out: PathBuf,
+    },
     /// Ask an issue server for a certificate using a saved proof (with a fresh identity unless --key)
     Issue {
         issuer: Multiaddr,
@@ -86,7 +102,9 @@ fn main() -> anyhow::Result<()> {
 
 #[cfg(feature = "sentry")]
 fn init_logging() -> Option<sentry::ClientInitGuard> {
-    let guard = std::env::var("SENTRY_DSN").ok().map(|dsn| sentry::init((dsn, sentry::ClientOptions { release: sentry::release_name!(), ..Default::default() })));
+    let guard = std::env::var("SENTRY_DSN").ok().map(|dsn| {
+        sentry::init((dsn, sentry::ClientOptions { release: sentry::release_name!(), ..Default::default() }))
+    });
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
@@ -124,7 +142,9 @@ async fn run(cmd: Cmd) -> anyhow::Result<()> {
         Cmd::Proof { config } => {
             let mut cfg = Config::load(&config)?;
             let proof = cfg.proof.take().ok_or_else(|| anyhow!("missing [proof] section"))?;
-            let key = Keypair::from_protobuf_encoding(&std::fs::read(&proof.key_file).with_context(|| format!("reading {}", proof.key_file.display()))?)?;
+            let key = Keypair::from_protobuf_encoding(
+                &std::fs::read(&proof.key_file).with_context(|| format!("reading {}", proof.key_file.display()))?,
+            )?;
             // keep the handle: the swarm stops once the last Node is dropped
             let node = service_node(&cfg, false)?;
             server::proof::run(&node, key)?;
@@ -184,7 +204,10 @@ async fn debug(cmd: Debug) -> anyhow::Result<()> {
     use nodetrust::proto::*;
     use prost::Message;
     let key = |k: Option<PathBuf>| match k {
-        Some(p) => Keypair::from_protobuf_encoding(&std::fs::read(&p).with_context(|| format!("reading {}", p.display()))?).map_err(Into::into),
+        Some(p) => {
+            Keypair::from_protobuf_encoding(&std::fs::read(&p).with_context(|| format!("reading {}", p.display()))?)
+                .map_err(Into::into)
+        }
         None => anyhow::Ok(Keypair::generate_ed25519()),
     };
     let check = |code: i32, what: &str| {
@@ -210,7 +233,10 @@ async fn debug(cmd: Debug) -> anyhow::Result<()> {
             let crypto = Crypto::EcdsaP256;
             let tls = nodetrust::tlskey::generate(crypto)?;
             let (node, _ev) = Node::spawn(key(k)?, NodeOptions::default())?;
-            let csr = nodetrust::tlskey::csr(&tls, &[nodetrust::names::fqdn(&nodetrust::names::id_label(&node.peer_id)?, "invalid")])?;
+            let csr = nodetrust::tlskey::csr(
+                &tls,
+                &[nodetrust::names::fqdn(&nodetrust::names::id_label(&node.peer_id)?, "invalid")],
+            )?;
             let req = IssueRequest { proofs: vec![proof], supported_cryptos: vec![crypto as i32], csr };
             let r: IssueResponse = node.request(&issuer, ISSUE_PROTOCOL, &req).await?;
             if !r.message.is_empty() {

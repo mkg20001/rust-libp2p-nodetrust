@@ -1,11 +1,7 @@
 //! Native client: obtain a certificate from an issue server, serve WSS with it, announce the
 //! WSS addresses over pubsub and renew in place before expiry.
 
-use std::{
-    net::IpAddr,
-    path::Path,
-    time::Duration,
-};
+use std::{net::IpAddr, path::Path, time::Duration};
 
 use anyhow::{Context, anyhow, bail};
 use libp2p::{Multiaddr, PeerId, identity::Keypair, multiaddr::Protocol};
@@ -17,7 +13,10 @@ use crate::{
     discovery, names,
     node::{Node, NodeEvent, NodeOptions, split_peer},
     proof::now_ms,
-    proto::{Crypto, Error, INFO_PROTOCOL, ISSUE_PROTOCOL, IssueInfo, IssueInfoRequest, IssueRequest, IssueResponse, PROOF_PROTOCOL, Proof, ProofRequest, ProofResponse, ProofWrapper},
+    proto::{
+        Crypto, Error, INFO_PROTOCOL, ISSUE_PROTOCOL, IssueInfo, IssueInfoRequest, IssueRequest, IssueResponse,
+        PROOF_PROTOCOL, Proof, ProofRequest, ProofResponse, ProofWrapper,
+    },
     tlskey, wss,
 };
 
@@ -165,7 +164,13 @@ fn external_addrs(cert: &CertState, ports: &Ports) -> Vec<Multiaddr> {
                 IpAddr::V4(_) => (Protocol::Dns4(name.clone().into()), ports.v4?),
                 IpAddr::V6(_) => (Protocol::Dns6(name.clone().into()), ports.v6?),
             };
-            Some(Multiaddr::empty().with(dns).with(Protocol::Tcp(port)).with(Protocol::Tls).with(Protocol::Ws("/".into())))
+            Some(
+                Multiaddr::empty()
+                    .with(dns)
+                    .with(Protocol::Tcp(port))
+                    .with(Protocol::Tls)
+                    .with(Protocol::Ws("/".into())),
+            )
         })
         .collect()
 }

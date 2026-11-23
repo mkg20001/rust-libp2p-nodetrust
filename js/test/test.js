@@ -6,7 +6,7 @@ import { tcp } from '@libp2p/tcp'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { identify } from '@libp2p/identify'
-import { gossipsub } from '@chainsafe/libp2p-gossipsub'
+import { gossipsub } from '@libp2p/gossipsub'
 import { peerIdFromString } from '@libp2p/peer-id'
 import schema from '../src/schema.js'
 import {
@@ -71,7 +71,8 @@ test('discovery between two nodes', async () => {
     services: { identify: identify(), pubsub: gossipsub({ allowPublishToZeroTopicPeers: true }) }
   })
   const [a, b] = await Promise.all([mk(), mk()])
-  const seen = new Promise(resolve => startDiscovery(b, { dial: false, onPeer: (peer, addrs) => resolve({ peer, addrs }) }))
+  let db
+  const seen = new Promise(resolve => { db = startDiscovery(b, { dial: false, onPeer: (peer, addrs) => resolve({ peer, addrs }) }) })
   const da = startDiscovery(a, { dial: false })
   await a.dial(b.getMultiaddrs()[0])
   const addr = '/dns4/ip4-1-2-3-4.nt.test/tcp/4443/tls/ws'
@@ -81,5 +82,6 @@ test('discovery between two nodes', async () => {
   assert.equal(got.peer, a.peerId.toString())
   assert.deepEqual(got.addrs, [addr])
   da.stop()
+  db.stop()
   await Promise.all([a.stop(), b.stop()])
 })

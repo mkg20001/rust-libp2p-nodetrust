@@ -12,7 +12,6 @@ use std::{
 };
 
 use arc_swap::ArcSwapOption;
-use futures::future::Either;
 use libp2p::{
     Multiaddr, Transport,
     core::{
@@ -87,12 +86,14 @@ fn strip_tls(addr: &Multiaddr) -> Option<Multiaddr> {
 
 /// `/ws` → `/tls/ws`
 fn add_tls(addr: Multiaddr) -> Multiaddr {
-    addr.iter()
-        .flat_map(|p| match p {
-            Protocol::Ws(path) => Either::Left([Protocol::Tls, Protocol::Ws(path)].into_iter()),
-            p => Either::Right(std::iter::once(p)),
-        })
-        .collect()
+    let mut out = Multiaddr::empty();
+    for p in addr.iter() {
+        if matches!(p, Protocol::Ws(_)) {
+            out.push(Protocol::Tls);
+        }
+        out.push(p);
+    }
+    out
 }
 
 impl Transport for WssListener {

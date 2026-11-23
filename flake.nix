@@ -75,6 +75,7 @@
           web = craneLib.mkCargoDerivation (wasm // {
             cargoArtifacts = wasmArtifacts;
             nativeBuildInputs = [ wasm-bindgen-cli ];
+            doInstallCargoArtifacts = false;
             buildPhaseCargoCommand = ''
               cargo build --release -p nodetrust-web --target wasm32-unknown-unknown
             '';
@@ -129,6 +130,23 @@
             });
             fmt = craneLib.cargoFmt { inherit src; };
           } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            # @playwright/test in js/package.json is pinned to this playwright-driver version
+            demo-e2e = js.overrideAttrs {
+              pname = "nodetrust-demo-e2e";
+              env = {
+                DEMO_DIR = demo;
+                PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+                PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+                # chromium aborts without a fontconfig
+                FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+              };
+              checkPhase = ''
+                runHook preCheck
+                HOME=$TMPDIR npm run test:demo
+                runHook postCheck
+              '';
+              installPhase = "touch $out";
+            };
             vm-test = pkgs.testers.runNixOSTest (import ./nix/test.nix {
               inherit (self.nixosModules) default;
               nodetrust = nodetrust;

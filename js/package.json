@@ -20,7 +20,8 @@
     "test"
   ],
   "scripts": {
-    "test": "node --test test/*.js"
+    "test": "node --test test/*.js",
+    "test:demo": "playwright test"
   },
   "engines": {
     "node": ">=20"
@@ -43,5 +44,8 @@
     "multiformats": "^13.4.1",
     "protobufjs": "^7.5.4",
     "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
   }
 }

@@ -72,8 +72,10 @@ Demo: `nix build .#demo`, serve `result/` over HTTP and open
 nix develop
 cargo test
 (cd js && npm install && npm test)
-nix flake check                      # clippy (native + wasm), fmt, unit tests, JS tests, VM test
+nix flake check                      # clippy (native + wasm), fmt, unit tests, JS tests, demo e2e, VM test
 nix build .#checks.x86_64-linux.vm-test -L
+nix build .#checks.x86_64-linux.demo-e2e -L   # Playwright: demo page with both implementations
+(cd js && DEMO_DIR=$(nix build --print-out-paths ..#demo) npm run test:demo)
 ```
 
 ## Changes from v1

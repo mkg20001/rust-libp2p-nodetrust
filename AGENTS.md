@@ -6,6 +6,7 @@
   (checked by `js/test/test.js`). Change all three together.
 * The DNS label encoding lives in `crates/nodetrust/src/names.rs` and `js/src/names.js`. Both
   test the same vector; keep them in sync.
-* Tests: `cargo test`, `npm test` (in `js/`), and the end-to-end check
-  `nix build .#checks.x86_64-linux.vm-test -L`.
+* Tests: `cargo test`, `npm test` (in `js/`), the demo browser tests
+  `nix build .#checks.x86_64-linux.demo-e2e -L` (`js/test-demo/`, Playwright pinned to nixpkgs'
+  `playwright-driver` version), and the end-to-end check `nix build .#checks.x86_64-linux.vm-test -L`.
 * `nix/test-keys/` holds throwaway keys for the VM test only.

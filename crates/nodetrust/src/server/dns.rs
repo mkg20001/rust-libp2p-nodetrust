@@ -229,13 +229,27 @@ pub async fn run(node: Node, cfg: DnsConfig) -> anyhow::Result<()> {
 
     let mut server = hickory_server::Server::new(Handler(zone));
     for addr in &cfg.listen {
-        server.register_socket(tokio::net::UdpSocket::bind(addr).await.with_context(|| format!("bind udp {addr}"))?);
-        let tcp = tokio::net::TcpListener::bind(addr).await.with_context(|| format!("bind tcp {addr}"))?;
-        server.register_listener(tcp, Duration::from_secs(5), 4096);
+        let udp = bind(*addr, socket2::Type::DGRAM).with_context(|| format!("bind udp {addr}"))?;
+        server.register_socket(tokio::net::UdpSocket::from_std(udp.into())?);
+        let tcp = bind(*addr, socket2::Type::STREAM).with_context(|| format!("bind tcp {addr}"))?;
+        tcp.listen(1024)?;
+        server.register_listener(tokio::net::TcpListener::from_std(tcp.into())?, Duration::from_secs(5), 4096);
         tracing::info!(%addr, zone = %cfg.zone, "dns listening");
     }
     server.block_until_done().await?;
     Ok(())
+}
+
+/// IPv6 sockets are v6-only so `0.0.0.0:53` and `[::]:53` can both be bound.
+fn bind(addr: std::net::SocketAddr, ty: socket2::Type) -> std::io::Result<socket2::Socket> {
+    let sock = socket2::Socket::new(socket2::Domain::for_address(addr), ty, None)?;
+    if addr.is_ipv6() {
+        sock.set_only_v6(true)?;
+    }
+    sock.set_reuse_address(true)?;
+    sock.set_nonblocking(true)?;
+    sock.bind(&addr.into())?;
+    Ok(sock)
 }
 
 fn dns01(zone: &Zone, admins: &[PeerId], peer: PeerId, req: &Dns01Request, ttl: Duration) -> Error {

@@ -103,6 +103,13 @@ mod tests {
     }
 
     #[test]
+    fn shared_vector_with_js() {
+        // same vector in js/test/test.js
+        let peer: PeerId = "12D3KooWD3eckifWpRn9wQpMG9R9hX3sD158z7EqHWmweQAJU5SA".parse().unwrap();
+        assert_eq!(id_label(&peer).unwrap(), "p0cllw0agyvgb9nhnvt2elffail9ggdvagkdsouqdvb4krqmudjzhcdes8b");
+    }
+
+    #[test]
     fn id_roundtrip() {
         let peer = libp2p::identity::Keypair::generate_ed25519().public().to_peer_id();
         let label = id_label(&peer).unwrap();

@@ -31,8 +31,11 @@ use crate::{
 };
 
 /// DNS-01 values per challenge name; several may coexist (parallel orders for the same name).
+/// fqdn → [(value, expiry)]
+type ChallengeMap = HashMap<String, Vec<(String, Instant)>>;
+
 #[derive(Clone, Default)]
-pub struct Challenges(Arc<Mutex<HashMap<String, Vec<(String, Instant)>>>>);
+pub struct Challenges(Arc<Mutex<ChallengeMap>>);
 
 impl Challenges {
     pub fn set(&self, fqdn: &str, value: &str, ttl: Duration) {
@@ -273,7 +276,7 @@ mod tests {
     }
 
     fn data(a: &Answer) -> Vec<String> {
-        a.answers.iter().map(|r| r.data().to_string()).collect()
+        a.answers.iter().map(|r| r.data.to_string()).collect()
     }
 
     #[test]

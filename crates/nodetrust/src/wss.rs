@@ -135,7 +135,7 @@ impl Transport for WssListener {
 }
 
 /// TCP with a TLS accept on every inbound connection.
-struct TlsTcpTransport {
+pub struct TlsTcpTransport {
     tcp: tcp::tokio::Transport,
     acceptor: futures_rustls::TlsAcceptor,
 }

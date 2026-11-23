@@ -1,6 +1,9 @@
 //! Issue service: verifies proofs, then obtains an ACME certificate (DNS-01 via the nodetrust
 //! DNS server) for the client's CSR. Certificates are cached per peer + names + key.
 
+// the Err variant is the IssueResponse sent back to the client, not worth boxing
+#![allow(clippy::result_large_err)]
+
 use std::{
     collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},

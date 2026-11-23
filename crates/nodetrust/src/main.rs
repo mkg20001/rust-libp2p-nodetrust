@@ -51,7 +51,10 @@ enum Cmd {
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+    #[cfg(feature = "sentry")]
     let _sentry = init_logging();
+    #[cfg(not(feature = "sentry"))]
+    init_logging();
     tokio::runtime::Runtime::new()?.block_on(run(cli.cmd))
 }
 

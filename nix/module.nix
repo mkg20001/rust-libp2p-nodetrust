@@ -93,7 +93,7 @@ let
       # %d (credentials dir) is only known at runtime: substitute it into the config there
       ExecStart = pkgs.writeShellScript "nodetrust-${role}" ''
         set -eu
-        sed "s|%d|$CREDENTIALS_DIRECTORY|g" ${file} > "$RUNTIME_DIRECTORY/config.toml"
+        sed "s|%d|''${CREDENTIALS_DIRECTORY:-}|g" ${file} > "$RUNTIME_DIRECTORY/config.toml"
         exec ${lib.getExe cfg.package} ${role} --config "$RUNTIME_DIRECTORY/config.toml" ${lib.escapeShellArgs rc.extraArgs}
       '';
       DynamicUser = true;

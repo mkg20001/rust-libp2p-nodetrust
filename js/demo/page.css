@@ -1,0 +1,13 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+header { background: #0c2130; color: #65c2ca; padding: 0.5rem 1rem; }
+header h1 { margin: 0; font-size: 1.4rem; }
+main { max-width: 70rem; margin: 1rem auto; padding: 0 1rem; display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+form, section:last-child { grid-column: 1 / -1; }
+form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+fieldset { display: flex; gap: 1rem; border: 1px solid #888; }
+button { padding: 0.4rem 1.2rem; }
+output { font-weight: bold; }
+ul { list-style: none; padding: 0; margin: 0; font-family: monospace; font-size: 0.8rem; }
+li { padding: 0.3rem; border-bottom: 1px solid #8884; word-break: break-all; }
+#log { max-height: 25rem; min-height: 10rem; overflow: auto; background: #4f4f4f; color: #fff; padding: 0.5rem; font-size: 0.75rem; }
+@media (max-width: 40rem) { main { grid-template-columns: 1fr; } }

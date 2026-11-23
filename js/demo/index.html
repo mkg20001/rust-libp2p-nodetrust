@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nodetrust Demo</title>
+  <link rel="stylesheet" href="page.css">
+</head>
+<body>
+  <header><h1>Nodetrust Demo</h1></header>
+  <main>
+    <form id="controls">
+      <label>Issuer <input id="issuer" size="80" placeholder="/dns4/issue.example.org/tcp/443/tls/ws/p2p/12D3Koo…" required></label>
+      <fieldset>
+        <legend>Implementation</legend>
+        <label><input type="radio" name="impl" value="js" checked> JavaScript (js-libp2p)</label>
+        <label><input type="radio" name="impl" value="wasm"> Rust (wasm)</label>
+      </fieldset>
+      <button id="toggle" type="submit">Start</button>
+      <output id="state" role="status">stopped</output>
+    </form>
+    <section>
+      <h2>Discovered peers</h2>
+      <ul id="peers"></ul>
+    </section>
+    <section>
+      <h2>Connected peers</h2>
+      <ul id="conns"></ul>
+    </section>
+    <section>
+      <h2>Log</h2>
+      <pre id="log" aria-live="polite"></pre>
+    </section>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

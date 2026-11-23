@@ -1,0 +1,47 @@
+{
+  "name": "libp2p-nodetrust",
+  "version": "0.2.0",
+  "description": "js-libp2p client for libp2p-nodetrust: DNS names, ACME certificates and WSS discovery",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "browser": {
+    "./src/store.js": "./src/store.browser.js"
+  },
+  "bin": {
+    "nodetrust-js": "./bin/nodetrust-js.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "demo",
+    "test"
+  ],
+  "scripts": {
+    "test": "node --test test/*.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "^14.1.2",
+    "@chainsafe/libp2p-noise": "^17.0.0",
+    "@chainsafe/libp2p-yamux": "^8.0.1",
+    "@libp2p/crypto": "^5.2.0",
+    "@libp2p/identify": "^4.1.18",
+    "@libp2p/peer-id": "^6.0.18",
+    "@libp2p/ping": "^3.1.17",
+    "@libp2p/tcp": "^11.0.32",
+    "@libp2p/upnp-nat": "^4.0.32",
+    "@libp2p/utils": "^7.4.5",
+    "@libp2p/websockets": "^10.1.25",
+    "@multiformats/multiaddr": "^13.0.3",
+    "@peculiar/x509": "^3.1.0",
+    "libp2p": "^3.5.1",
+    "multiformats": "^13.4.1",
+    "protobufjs": "^7.5.4",
+    "reflect-metadata": "^0.2.2"
+  }
+}

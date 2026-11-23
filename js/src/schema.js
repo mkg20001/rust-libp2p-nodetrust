@@ -1,0 +1,98 @@
+// Copy of proto/nodetrust.proto (test/test.js checks they match).
+export default `// libp2p-nodetrust wire format, version 2.
+// Every protocol is one request and one response on a fresh stream; each message is
+// prefixed with its length as an unsigned varint.
+syntax = "proto3";
+
+enum Error {
+  OK                   = 0;
+  E_RATE_LIMIT         = 1; // rate limit (ACME CA or server)
+  E_INVALID_PROOF      = 2; // bad signature, expired, or issued for another peer
+  E_NOT_AUTHORIZED     = 3; // dns-01 from a peer that is not an admin
+  E_NO_MATCHING_CRYPTO = 4; // no key type in common / CSR key type not offered
+  E_INVALID_REQUEST    = 5; // malformed CSR, fqdn outside zone, ...
+  E_OTHER              = 9; // internal server error
+}
+
+enum Crypto { // key type of the certificate
+  CRYPTO_UNKNOWN = 0;
+  RSA            = 1;
+  ECDSA_P256     = 2;
+}
+
+enum AddressType {
+  ADDRESS_UNKNOWN = 0;
+  IPv4            = 1;
+  IPv6            = 2;
+}
+
+message Address {
+  AddressType type = 1;
+  string address = 2;
+}
+
+message Proof {
+  bytes id = 1;          // peer id the proof was issued to
+  int64 timestamp = 2;   // ms since epoch, valid for +/- 5 minutes
+  repeated Address addrs = 3;
+}
+
+message ProofWrapper {
+  bytes proof = 1;       // encoded Proof (signed bytes, never re-encoded)
+  bytes signature = 2;   // libp2p key signature over the proof bytes
+}
+
+message ProofServer {
+  bytes id = 1;
+  repeated bytes addrs = 2; // multiaddrs
+  string display = 3;
+}
+
+// /nodetrust/proof/2.0.0
+message ProofRequest {}
+message ProofResponse {
+  Error error = 1;
+  ProofWrapper proof = 2;
+}
+
+// /nodetrust/issue/info/2.0.0
+message IssueInfoRequest {}
+message IssueInfo {
+  string domain = 1;
+  repeated ProofServer proofs = 2;
+  repeated Crypto supported_cryptos = 3;
+}
+
+// /nodetrust/issue/2.0.0
+message IssueRequest {
+  repeated ProofWrapper proofs = 1;
+  repeated Crypto supported_cryptos = 2;
+  bytes csr = 3; // DER PKCS#10; the private key never leaves the client
+}
+message IssueResponse {
+  Error error = 1;
+  bytes cert = 2;  // PEM leaf
+  bytes chain = 3; // PEM leaf + intermediates
+  bytes ca = 4;    // PEM intermediates
+  string cn = 6;   // id0 name
+  repeated string altnames = 7; // ipN names
+  int64 validity = 8; // notAfter, ms since epoch
+  bool from_cache = 9;
+  Crypto crypto_type = 10;
+  string message = 11; // human readable error detail
+}
+
+// /nodetrust/dns-01/2.0.0
+message DNS01Request {
+  string fqdn = 1;  // name being validated; "_acme-challenge." is prepended server side
+  string value = 2;
+}
+message DNS01Response {
+  Error error = 1;
+}
+
+// gossipsub topic _nodetrust_discovery_v2
+message Announce {
+  repeated bytes addr = 1;
+}
+`

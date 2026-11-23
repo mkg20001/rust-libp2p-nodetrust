@@ -14,11 +14,18 @@ use libp2p::{
 use nodetrust::discovery;
 use wasm_bindgen::prelude::*;
 
-#[derive(NetworkBehaviour)]
-struct Behaviour {
-    gossipsub: gossipsub::Behaviour,
-    identify: identify::Behaviour,
-    ping: ping::Behaviour,
+use behaviour::{Behaviour, BehaviourEvent};
+mod behaviour {
+    // the derive's generated code trips this lint on current rustc
+    #![allow(unreachable_code)]
+    use super::*;
+
+    #[derive(NetworkBehaviour)]
+    pub struct Behaviour {
+        pub gossipsub: gossipsub::Behaviour,
+        pub identify: identify::Behaviour,
+        pub ping: ping::Behaviour,
+    }
 }
 
 /// Handle to a running node; `stop()` shuts it down.
@@ -101,7 +108,8 @@ pub fn start(issuer: &str, on_peer: js_sys::Function, on_connect: js_sys::Functi
 }
 
 fn call(f: &js_sys::Function, peer: &PeerId, rest: &[JsValue]) {
-    let args: js_sys::Array = std::iter::once(JsValue::from_str(&peer.to_string())).chain(rest.iter().cloned()).collect();
+    let args: js_sys::Array =
+        std::iter::once(JsValue::from_str(&peer.to_string())).chain(rest.iter().cloned()).collect();
     if let Err(e) = f.apply(&JsValue::NULL, &args) {
         web_sys_log(&format!("callback threw: {e:?}"));
     }

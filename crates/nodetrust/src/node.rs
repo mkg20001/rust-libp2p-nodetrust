@@ -26,14 +26,21 @@ use crate::{discovery, wire, wss};
 
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
-#[derive(NetworkBehaviour)]
-pub struct Behaviour {
-    pub stream: libp2p_stream::Behaviour,
-    pub gossipsub: gossipsub::Behaviour,
-    pub identify: identify::Behaviour,
-    pub ping: ping::Behaviour,
-    pub relay: Toggle<relay::Behaviour>,
-    pub upnp: Toggle<upnp::tokio::Behaviour>,
+pub use behaviour::{Behaviour, BehaviourEvent};
+mod behaviour {
+    // the derive's generated code trips this lint on current rustc
+    #![allow(unreachable_code)]
+    use super::*;
+
+    #[derive(NetworkBehaviour)]
+    pub struct Behaviour {
+        pub stream: libp2p_stream::Behaviour,
+        pub gossipsub: gossipsub::Behaviour,
+        pub identify: identify::Behaviour,
+        pub ping: ping::Behaviour,
+        pub relay: Toggle<relay::Behaviour>,
+        pub upnp: Toggle<upnp::tokio::Behaviour>,
+    }
 }
 
 #[derive(Default)]
@@ -83,7 +90,9 @@ pub struct Node {
 /// Load a protobuf-encoded libp2p keypair, generating (and saving) an Ed25519 one if missing.
 pub fn load_or_create_key(path: &Path) -> anyhow::Result<Keypair> {
     match std::fs::read(path) {
-        Ok(bytes) => Keypair::from_protobuf_encoding(&bytes).with_context(|| format!("decoding key {}", path.display())),
+        Ok(bytes) => {
+            Keypair::from_protobuf_encoding(&bytes).with_context(|| format!("decoding key {}", path.display()))
+        }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             let key = Keypair::generate_ed25519();
             if let Some(dir) = path.parent() {
@@ -159,7 +168,12 @@ impl Node {
     }
 
     /// Dial `addr`, open `protocol` and run one request/response exchange.
-    pub async fn request<Req, Resp>(&self, addr: &Multiaddr, protocol: StreamProtocol, req: &Req) -> anyhow::Result<Resp>
+    pub async fn request<Req, Resp>(
+        &self,
+        addr: &Multiaddr,
+        protocol: StreamProtocol,
+        req: &Req,
+    ) -> anyhow::Result<Resp>
     where
         Req: prost::Message,
         Resp: prost::Message + Default,
@@ -183,7 +197,8 @@ impl Node {
         F: Fn(PeerId, Req) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Resp> + Send + 'static,
     {
-        let mut incoming = self.control.clone().accept(protocol.clone()).map_err(|_| anyhow!("{protocol} already served"))?;
+        let mut incoming =
+            self.control.clone().accept(protocol.clone()).map_err(|_| anyhow!("{protocol} already served"))?;
         let handler = Arc::new(handler);
         tokio::spawn(async move {
             while let Some((peer, mut stream)) = incoming.next().await {
@@ -223,7 +238,9 @@ fn build_swarm(key: Keypair, opts: &NodeOptions) -> anyhow::Result<Swarm<Behavio
         .with_other_transport(move |key| -> Result<_, BoxError> {
             // order matters: the dns-wrapped TCP transport accepts any /dns address synchronously,
             // so the websocket transports must get the first look at an address.
-            let mut ws = websocket::Config::new(dns::tokio::Transport::system(tcp::tokio::Transport::new(tcp::Config::default()))?);
+            let mut ws = websocket::Config::new(dns::tokio::Transport::system(tcp::tokio::Transport::new(
+                tcp::Config::default(),
+            ))?);
             ws.set_tls_config(tls);
             let plain = dns::tokio::Transport::system(tcp::tokio::Transport::new(tcp::Config::default()))?;
             let mut t = secure(ws, key)?.or_transport(secure(plain, key)?).map(|e, _| e.into_inner()).boxed();
@@ -238,7 +255,9 @@ fn build_swarm(key: Keypair, opts: &NodeOptions) -> anyhow::Result<Swarm<Behavio
                 gossipsub: discovery::gossipsub(key)?,
                 identify: identify::Behaviour::new(identify::Config::new("/nodetrust/2.0.0".into(), key.public())),
                 ping: ping::Behaviour::default(),
-                relay: relay_enabled.then(|| relay::Behaviour::new(key.public().to_peer_id(), Default::default())).into(),
+                relay: relay_enabled
+                    .then(|| relay::Behaviour::new(key.public().to_peer_id(), Default::default()))
+                    .into(),
                 upnp: upnp_enabled.then(upnp::tokio::Behaviour::default).into(),
             })
         })?

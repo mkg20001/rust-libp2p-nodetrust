@@ -128,7 +128,7 @@
               cargoClippyExtraArgs = "-- -D warnings";
             });
             fmt = craneLib.cargoFmt { inherit src; };
-          } // lib.optionalAttrs pkgs.stdenv.isLinux {
+          } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             vm-test = pkgs.testers.runNixOSTest (import ./nix/test.nix {
               inherit (self.nixosModules) default;
               nodetrust = nodetrust;

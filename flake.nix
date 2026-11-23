@@ -25,7 +25,10 @@
             targets = [ "wasm32-unknown-unknown" ];
           };
           craneLib = (crane.mkLib pkgs).overrideToolchain (_: toolchain);
-          src = craneLib.cleanCargoSource ./.;
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type: craneLib.filterCargoSources path type || lib.hasInfix "/examples/" path;
+          };
           common = {
             inherit src;
             strictDeps = true;
@@ -60,7 +63,7 @@
             src = pkgs.fetchCrate {
               pname = "wasm-bindgen-cli";
               version = wasmBindgenVersion;
-              hash = "sha256-VgI2CdaP+GlUBqdp9khjrEc5GBLt/B5tvXXjcRbCw/I=";
+              hash = "sha256-UsuxILm1G6PkmVw0I/JF12CRltAfCJQFOaT4hFwvR8E=";
             };
             cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
               inherit src;
@@ -88,7 +91,8 @@
               src = ./js;
               filter = path: _: !(lib.hasInfix "node_modules" path);
             };
-            npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+            npmDeps = pkgs.importNpmLock { npmRoot = ./js; };
+            npmConfigHook = pkgs.importNpmLock.npmConfigHook;
             dontNpmBuild = true;
             doCheck = true;
             checkPhase = ''

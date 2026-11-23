@@ -47,6 +47,32 @@ enum Cmd {
         #[arg(long, default_value = "30")]
         timeout: u64,
     },
+    /// Protocol probes for testing and debugging; print the server's reply, exit 1 unless OK
+    #[command(subcommand)]
+    Debug(Debug),
+}
+
+#[derive(Subcommand)]
+enum Debug {
+    /// Push a DNS-01 value to a DNS server (only admins are accepted)
+    Dns01 {
+        dns: Multiaddr,
+        fqdn: String,
+        value: String,
+        /// identity to use (default: ephemeral)
+        #[arg(long)]
+        key: Option<PathBuf>,
+    },
+    /// Fetch a proof from a proof server and save it
+    Proof { server: Multiaddr, #[arg(long)] out: PathBuf },
+    /// Ask an issue server for a certificate using a saved proof (with a fresh identity unless --key)
+    Issue {
+        issuer: Multiaddr,
+        #[arg(long)]
+        proof: PathBuf,
+        #[arg(long)]
+        key: Option<PathBuf>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -126,6 +152,7 @@ async fn run(cmd: Cmd) -> anyhow::Result<()> {
             print_key(&Keypair::from_protobuf_encoding(&std::fs::read(&key)?)?);
             Ok(())
         }
+        Cmd::Debug(d) => debug(d).await,
         Cmd::Ping { addr, ca, timeout } => {
             let (target, _) = node::split_peer(&addr)?;
             let (node, mut events) = Node::spawn(
@@ -147,6 +174,47 @@ async fn run(cmd: Cmd) -> anyhow::Result<()> {
             .context("no ping reply")??;
             println!("pong from {target} in {rtt:?}");
             Ok(())
+        }
+    }
+}
+
+async fn debug(cmd: Debug) -> anyhow::Result<()> {
+    use nodetrust::proto::*;
+    use prost::Message;
+    let key = |k: Option<PathBuf>| match k {
+        Some(p) => Keypair::from_protobuf_encoding(&std::fs::read(&p).with_context(|| format!("reading {}", p.display()))?).map_err(Into::into),
+        None => anyhow::Ok(Keypair::generate_ed25519()),
+    };
+    let check = |code: i32, what: &str| {
+        let e = Error::try_from(code).unwrap_or(Error::EOther);
+        println!("{what}: {e:?}");
+        if e == Error::Ok { Ok(()) } else { bail!("{what} returned {e:?}") }
+    };
+    match cmd {
+        Debug::Dns01 { dns, fqdn, value, key: k } => {
+            let (node, _ev) = Node::spawn(key(k)?, NodeOptions::default())?;
+            let r: Dns01Response = node.request(&dns, DNS01_PROTOCOL, &Dns01Request { fqdn, value }).await?;
+            check(r.error, "dns-01")
+        }
+        Debug::Proof { server, out } => {
+            let (node, _ev) = Node::spawn(Keypair::generate_ed25519(), NodeOptions::default())?;
+            let r: ProofResponse = node.request(&server, PROOF_PROTOCOL, &ProofRequest {}).await?;
+            check(r.error, "proof")?;
+            std::fs::write(&out, r.proof.unwrap_or_default().encode_to_vec())?;
+            Ok(())
+        }
+        Debug::Issue { issuer, proof, key: k } => {
+            let proof = ProofWrapper::decode(std::fs::read(&proof)?.as_slice())?;
+            let crypto = Crypto::EcdsaP256;
+            let tls = nodetrust::tlskey::generate(crypto)?;
+            let (node, _ev) = Node::spawn(key(k)?, NodeOptions::default())?;
+            let csr = nodetrust::tlskey::csr(&tls, &[nodetrust::names::fqdn(&nodetrust::names::id_label(&node.peer_id)?, "invalid")])?;
+            let req = IssueRequest { proofs: vec![proof], supported_cryptos: vec![crypto as i32], csr };
+            let r: IssueResponse = node.request(&issuer, ISSUE_PROTOCOL, &req).await?;
+            if !r.message.is_empty() {
+                println!("message: {}", r.message);
+            }
+            check(r.error, "issue")
         }
     }
 }

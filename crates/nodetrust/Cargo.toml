@@ -1,0 +1,58 @@
+[package]
+name = "nodetrust"
+description = "IP.<zone> addresses and certificates for libp2p nodes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["native"]
+# servers, native client, CLI
+native = [
+  "libp2p/tcp", "libp2p/websocket", "libp2p/dns", "libp2p/tokio", "libp2p/relay", "libp2p/upnp",
+  "dep:tokio", "dep:libp2p-stream", "dep:hickory-server", "dep:rand", "libp2p/serde", "dep:instant-acme", "dep:rcgen",
+  "dep:rustls", "dep:futures-rustls", "dep:rsa", "dep:arc-swap", "dep:x509-parser", "dep:clap", "dep:toml",
+  "dep:tracing-subscriber", "dep:serde_json", "dep:sha2", "dep:hex", "dep:anyhow", "dep:base64",
+  "dep:rustls-pemfile", "dep:webpki-roots",
+]
+sentry = ["dep:sentry", "dep:sentry-tracing"]
+
+[dependencies]
+libp2p = { workspace = true, features = ["noise", "yamux", "gossipsub", "identify", "ping", "macros", "ed25519"] }
+prost.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+multibase.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true
+libp2p-stream = { version = "0.5.0-alpha", optional = true }
+web-time = "1"
+
+tokio = { version = "1", features = ["full"], optional = true }
+hickory-server = { version = "0.26", optional = true }
+rand = { version = "0.8", optional = true }
+instant-acme = { version = "0.8", default-features = false, features = ["ring", "hyper-rustls"], optional = true }
+rcgen = { version = "0.14", default-features = false, features = ["ring", "pem", "x509-parser"], optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"], optional = true }
+futures-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"], optional = true }
+rsa = { version = "0.9", features = ["pem"], optional = true }
+rustls-pemfile = { version = "2", optional = true }
+webpki-roots = { version = "1", optional = true }
+arc-swap = { version = "1", optional = true }
+x509-parser = { version = "0.18", features = ["verify"], optional = true }
+clap = { version = "4", features = ["derive", "env"], optional = true }
+toml = { version = "0.9", optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.10", optional = true }
+hex = { version = "0.4", optional = true }
+anyhow = { version = "1", optional = true }
+base64 = { version = "0.22", optional = true }
+sentry = { version = "0.42", optional = true, default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
+sentry-tracing = { version = "0.42", optional = true }
+
+[[bin]]
+name = "nodetrust"
+required-features = ["native"]

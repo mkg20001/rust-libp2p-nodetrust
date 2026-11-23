@@ -1,0 +1,20 @@
+[workspace]
+resolver = "3"
+members = ["crates/nodetrust", "crates/nodetrust-web"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/mkg20001/libp2p-nodetrust"
+
+[workspace.dependencies]
+nodetrust = { path = "crates/nodetrust", default-features = false }
+libp2p = { version = "0.57", default-features = false }
+prost = "0.14"
+futures = "0.3"
+async-trait = "0.1"
+multibase = "0.9"
+thiserror = "2"
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
